@@ -3,6 +3,7 @@ import WorkflowUpload from './components/workflow/WorkflowUpload';
 import WorkflowList from './components/workflow/WorkflowList';
 import WorkflowFilter from './components/workflow/WorkflowFilter';
 import ExportImport from './components/workflow/ExportImport';
+import BulkActions from './components/workflow/BulkActions';
 
 function App() {
   const [refreshKey, setRefreshKey] = useState(0);
@@ -23,6 +24,10 @@ function App() {
 
   const handleSelectionChange = (ids) => {
     setSelectedIds(ids);
+  };
+
+  const handleBulkActionComplete = () => {
+    setRefreshKey((prev) => prev + 1);
   };
 
   return (
@@ -61,9 +66,14 @@ function App() {
         </section>
       </main>
 
+      <BulkActions
+        selectedIds={selectedIds}
+        onActionComplete={handleBulkActionComplete}
+      />
+
       <footer className="bg-gray-800 border-t border-gray-700 mt-16">
         <div className="container mx-auto px-4 py-6 text-center text-gray-500 text-sm">
-          <p>フェーズ5: エクスポート・インポート機能実装完了</p>
+          <p>フェーズ6: UI/UX改善（選択・一括操作）</p>
         </div>
       </footer>
     </div>
