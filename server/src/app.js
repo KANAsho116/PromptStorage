@@ -18,6 +18,7 @@ import {
   RATE_LIMIT_WINDOW_MS,
   RATE_LIMIT_MAX_REQUESTS
 } from './config/constants.js';
+import workflowRoutes from './routes/workflow.routes.js';
 
 // 環境変数読み込み
 config();
@@ -68,8 +69,8 @@ app.get('/health', (req, res) => {
   });
 });
 
-// API ルート（後で追加）
-// app.use(`${API_PREFIX}/workflows`, workflowRoutes);
+// API ルート
+app.use(`${API_PREFIX}/workflows`, workflowRoutes);
 // app.use(`${API_PREFIX}/tags`, tagRoutes);
 // app.use(`${API_PREFIX}/images`, imageRoutes);
 // app.use(`${API_PREFIX}/export`, exportRoutes);

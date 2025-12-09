@@ -1,47 +1,46 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import WorkflowUpload from './components/workflow/WorkflowUpload';
+import WorkflowList from './components/workflow/WorkflowList';
 
 function App() {
-  const [serverStatus, setServerStatus] = useState('checking...');
+  const [refreshKey, setRefreshKey] = useState(0);
 
-  useEffect(() => {
-    // サーバー接続テスト
-    fetch('/api/test')
-      .then(res => res.json())
-      .then(data => {
-        setServerStatus(data.success ? 'connected' : 'error');
-      })
-      .catch(() => {
-        setServerStatus('disconnected');
-      });
-  }, []);
+  const handleUploadSuccess = () => {
+    // ワークフロー一覧を再読み込み
+    setRefreshKey((prev) => prev + 1);
+  };
 
   return (
     <div className="min-h-screen bg-gray-900 text-white">
-      <div className="container mx-auto px-4 py-16">
-        <div className="text-center">
-          <h1 className="text-5xl font-bold mb-4">
-            PromptStorage
-          </h1>
-          <p className="text-xl text-gray-400 mb-8">
-            ComfyUI Workflow Manager
-          </p>
-          <div className="bg-gray-800 rounded-lg p-6 max-w-md mx-auto">
-            <div className="flex items-center justify-between">
-              <span className="text-gray-300">Server Status:</span>
-              <span className={`font-semibold ${
-                serverStatus === 'connected' ? 'text-green-400' :
-                serverStatus === 'disconnected' ? 'text-red-400' :
-                'text-yellow-400'
-              }`}>
-                {serverStatus}
-              </span>
-            </div>
-          </div>
-          <p className="mt-8 text-gray-500">
-            フェーズ1: 基盤構築完了
-          </p>
+      {/* ヘッダー */}
+      <header className="bg-gray-800 border-b border-gray-700">
+        <div className="container mx-auto px-4 py-6">
+          <h1 className="text-3xl font-bold">PromptStorage</h1>
+          <p className="text-gray-400 mt-1">ComfyUI Workflow Manager</p>
         </div>
-      </div>
+      </header>
+
+      {/* メインコンテンツ */}
+      <main className="container mx-auto px-4 py-8">
+        {/* アップロードセクション */}
+        <section className="mb-12">
+          <h2 className="text-2xl font-semibold mb-6">ワークフローをアップロード</h2>
+          <WorkflowUpload onSuccess={handleUploadSuccess} />
+        </section>
+
+        {/* 一覧セクション */}
+        <section>
+          <h2 className="text-2xl font-semibold mb-6">保存されたワークフロー</h2>
+          <WorkflowList refresh={refreshKey} />
+        </section>
+      </main>
+
+      {/* フッター */}
+      <footer className="bg-gray-800 border-t border-gray-700 mt-16">
+        <div className="container mx-auto px-4 py-6 text-center text-gray-500 text-sm">
+          <p>フェーズ2: コア機能実装完了</p>
+        </div>
+      </footer>
     </div>
   );
 }
