@@ -2,13 +2,14 @@ import { useState } from 'react';
 import WorkflowUpload from './components/workflow/WorkflowUpload';
 import WorkflowList from './components/workflow/WorkflowList';
 import WorkflowFilter from './components/workflow/WorkflowFilter';
+import ExportImport from './components/workflow/ExportImport';
 
 function App() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [filters, setFilters] = useState({});
+  const [selectedIds, setSelectedIds] = useState([]);
 
   const handleUploadSuccess = () => {
-    // ワークフロー一覧を再読み込み
     setRefreshKey((prev) => prev + 1);
   };
 
@@ -16,9 +17,16 @@ function App() {
     setFilters(newFilters);
   };
 
+  const handleImportSuccess = () => {
+    setRefreshKey((prev) => prev + 1);
+  };
+
+  const handleSelectionChange = (ids) => {
+    setSelectedIds(ids);
+  };
+
   return (
     <div className="min-h-screen bg-gray-900 text-white">
-      {/* ヘッダー */}
       <header className="bg-gray-800 border-b border-gray-700">
         <div className="container mx-auto px-4 py-6">
           <h1 className="text-3xl font-bold">PromptStorage</h1>
@@ -26,30 +34,36 @@ function App() {
         </div>
       </header>
 
-      {/* メインコンテンツ */}
       <main className="container mx-auto px-4 py-8">
-        {/* アップロードセクション */}
         <section className="mb-12">
           <h2 className="text-2xl font-semibold mb-6">ワークフローをアップロード</h2>
           <WorkflowUpload onSuccess={handleUploadSuccess} />
         </section>
 
-        {/* 検索・フィルターセクション */}
+        <section className="mb-8">
+          <ExportImport
+            selectedIds={selectedIds}
+            onImportSuccess={handleImportSuccess}
+          />
+        </section>
+
         <section className="mb-8">
           <WorkflowFilter onFilterChange={handleFilterChange} />
         </section>
 
-        {/* 一覧セクション */}
         <section>
           <h2 className="text-2xl font-semibold mb-6">保存されたワークフロー</h2>
-          <WorkflowList refresh={refreshKey} filters={filters} />
+          <WorkflowList
+            refresh={refreshKey}
+            filters={filters}
+            onSelectionChange={handleSelectionChange}
+          />
         </section>
       </main>
 
-      {/* フッター */}
       <footer className="bg-gray-800 border-t border-gray-700 mt-16">
         <div className="container mx-auto px-4 py-6 text-center text-gray-500 text-sm">
-          <p>フェーズ4: 検索・フィルター機能実装完了</p>
+          <p>フェーズ5: エクスポート・インポート機能実装完了</p>
         </div>
       </footer>
     </div>

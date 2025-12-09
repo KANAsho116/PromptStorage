@@ -120,3 +120,23 @@ export function getTagUsageCount(id) {
   `).get(id);
   return result.count;
 }
+
+/**
+ * ワークフローIDでタグを取得
+ * @param {number} workflowId - ワークフローID
+ * @returns {Array} タグ一覧
+ */
+export function getTagsByWorkflowId(workflowId) {
+  return db.prepare(`
+    SELECT t.* FROM tags t
+    JOIN workflow_tags wt ON t.id = wt.tag_id
+    WHERE wt.workflow_id = ?
+  `).all(workflowId);
+}
+
+/**
+ * getTagByNameのエイリアス（インポート処理用）
+ */
+export function getByName(name) {
+  return getTagByName(name);
+}

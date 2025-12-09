@@ -345,3 +345,48 @@ export function isNameDuplicate(name, excludeId = null) {
   const result = db.prepare(query).get(...params);
   return result.count > 0;
 }
+
+/**
+ * 名前でワークフローを取得
+ * @param {string} name - ワークフロー名
+ * @returns {Object|null} ワークフロー情報
+ */
+export function getByName(name) {
+  const workflow = db.prepare('SELECT * FROM workflows WHERE name = ?').get(name);
+  return workflow || null;
+}
+
+/**
+ * IDでワークフローを取得（シンプル版）
+ * @param {number} id - ワークフローID
+ * @returns {Object|null} ワークフロー情報
+ */
+export function getById(id) {
+  return db.prepare('SELECT * FROM workflows WHERE id = ?').get(id) || null;
+}
+
+/**
+ * ワークフローのタグを更新（既存タグを置き換え）
+ * @param {number} workflowId - ワークフローID
+ * @param {Array<number>} tagIds - タグIDの配列
+ */
+export function updateWorkflowTags(workflowId, tagIds) {
+  const transaction = db.transaction(() => {
+    // 既存のタグを削除
+    db.prepare('DELETE FROM workflow_tags WHERE workflow_id = ?').run(workflowId);
+
+    // 新しいタグを追加
+    if (tagIds.length > 0) {
+      const insert = db.prepare(`
+        INSERT INTO workflow_tags (workflow_id, tag_id)
+        VALUES (?, ?)
+      `);
+
+      for (const tagId of tagIds) {
+        insert.run(workflowId, tagId);
+      }
+    }
+  });
+
+  transaction();
+}
