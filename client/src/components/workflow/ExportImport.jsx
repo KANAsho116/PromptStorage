@@ -77,49 +77,51 @@ export default function ExportImport({ selectedIds = [], onImportSuccess }) {
   };
 
   return (
-    <div className="flex items-center gap-4 p-4 bg-gray-800 border-b border-gray-700">
+    <div className="flex flex-col md:flex-row md:items-center gap-3 md:gap-4 p-4 bg-gray-800 border-b border-gray-700">
       {/* エクスポートセクション */}
-      <div className="flex items-center gap-2">
-        <span className="text-sm text-gray-400">エクスポート:</span>
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-xs md:text-sm text-gray-400 font-semibold">エクスポート:</span>
         <button
           onClick={handleExportJSON}
           disabled={selectedIds.length === 0}
-          className="px-3 py-1.5 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-sm"
+          className="px-2 md:px-3 py-1 md:py-1.5 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-xs md:text-sm transition-colors"
         >
           JSON
         </button>
         <button
           onClick={handleExportZIP}
           disabled={selectedIds.length === 0}
-          className="px-3 py-1.5 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-sm"
+          className="px-2 md:px-3 py-1 md:py-1.5 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-xs md:text-sm transition-colors"
         >
-          ZIP (画像含む)
+          <span className="hidden sm:inline">ZIP (画像含む)</span>
+          <span className="sm:hidden">ZIP</span>
         </button>
         {selectedIds.length > 0 && (
-          <span className="text-xs text-gray-500">({selectedIds.length}件選択中)</span>
+          <span className="text-xs text-blue-400">({selectedIds.length}件)</span>
         )}
       </div>
 
       {/* 区切り */}
-      <div className="h-6 w-px bg-gray-700"></div>
+      <div className="hidden md:block h-6 w-px bg-gray-700"></div>
+      <div className="md:hidden h-px w-full bg-gray-700"></div>
 
       {/* インポートセクション */}
-      <div className="flex items-center gap-2">
-        <span className="text-sm text-gray-400">インポート:</span>
+      <div className="flex flex-wrap items-center gap-2">
+        <span className="text-xs md:text-sm text-gray-400 font-semibold">インポート:</span>
 
         {/* 重複時の処理選択 */}
         <select
           value={duplicateAction}
           onChange={(e) => setDuplicateAction(e.target.value)}
-          className="px-2 py-1.5 bg-gray-700 text-white rounded text-sm border border-gray-600"
+          className="px-2 py-1 md:py-1.5 bg-gray-700 text-white rounded text-xs md:text-sm border border-gray-600 focus:ring-2 focus:ring-blue-500"
         >
-          <option value="rename">重複時: 名前変更</option>
-          <option value="skip">重複時: スキップ</option>
-          <option value="overwrite">重複時: 上書き</option>
+          <option value="rename">名前変更</option>
+          <option value="skip">スキップ</option>
+          <option value="overwrite">上書き</option>
         </select>
 
         {/* ファイル選択ボタン */}
-        <label className="px-3 py-1.5 bg-green-600 text-white rounded hover:bg-green-700 cursor-pointer text-sm">
+        <label className="px-2 md:px-3 py-1 md:py-1.5 bg-green-600 text-white rounded hover:bg-green-700 cursor-pointer text-xs md:text-sm transition-colors">
           {importing ? 'インポート中...' : 'ファイル選択'}
           <input
             type="file"
