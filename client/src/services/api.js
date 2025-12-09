@@ -104,4 +104,33 @@ export const imageAPI = {
   },
 };
 
+/**
+ * タグAPI
+ */
+export const tagAPI = {
+  // 全タグ取得
+  getAll: async () => {
+    const response = await api.get('/tags');
+    return response.data;
+  },
+
+  // タグ作成
+  create: async (tagData) => {
+    const response = await api.post('/tags', tagData);
+    return response.data;
+  },
+
+  // タグ更新
+  update: async (id, updates) => {
+    const response = await api.put(`/tags/${id}`, updates);
+    return response.data;
+  },
+
+  // タグ削除
+  delete: async (id) => {
+    const response = await api.delete(`/tags/${id}`);
+    return response.data;
+  },
+};
+
 export default api;

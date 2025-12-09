@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { workflowAPI, imageAPI } from '../../services/api';
 
-export default function WorkflowList({ refresh }) {
+export default function WorkflowList({ refresh, filters = {} }) {
   const [workflows, setWorkflows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -9,8 +9,16 @@ export default function WorkflowList({ refresh }) {
   const fetchWorkflows = async () => {
     try {
       setLoading(true);
-      const result = await workflowAPI.getAll();
-      setWorkflows(result.data);
+
+      // 検索クエリがある場合は検索APIを使用
+      if (filters.q) {
+        const result = await workflowAPI.search(filters.q, filters);
+        setWorkflows(result.data);
+      } else {
+        const result = await workflowAPI.getAll(filters);
+        setWorkflows(result.data);
+      }
+
       setError(null);
     } catch (err) {
       console.error('Fetch error:', err);
@@ -22,7 +30,7 @@ export default function WorkflowList({ refresh }) {
 
   useEffect(() => {
     fetchWorkflows();
-  }, [refresh]);
+  }, [refresh, JSON.stringify(filters)]);
 
   const handleDelete = async (id) => {
     if (!confirm('このワークフローを削除しますか？')) return;

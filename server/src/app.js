@@ -20,6 +20,7 @@ import {
 } from './config/constants.js';
 import workflowRoutes from './routes/workflow.routes.js';
 import imageRoutes from './routes/image.routes.js';
+import tagRoutes from './routes/tag.routes.js';
 
 // 環境変数読み込み
 config();
@@ -73,7 +74,7 @@ app.get('/health', (req, res) => {
 // API ルート
 app.use(`${API_PREFIX}/workflows`, workflowRoutes);
 app.use(`${API_PREFIX}/images`, imageRoutes);
-// app.use(`${API_PREFIX}/tags`, tagRoutes);
+app.use(`${API_PREFIX}/tags`, tagRoutes);
 // app.use(`${API_PREFIX}/export`, exportRoutes);
 
 // テスト用エンドポイント
