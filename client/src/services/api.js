@@ -67,4 +67,41 @@ export const workflowAPI = {
   },
 };
 
+/**
+ * 画像API
+ */
+export const imageAPI = {
+  // ワークフローに画像をアップロード
+  uploadImages: async (workflowId, files) => {
+    const formData = new FormData();
+    for (const file of files) {
+      formData.append('images', file);
+    }
+
+    const response = await api.post(`/images/workflows/${workflowId}/images`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
+
+  // ワークフローの画像一覧を取得
+  getWorkflowImages: async (workflowId) => {
+    const response = await api.get(`/images/workflows/${workflowId}/images`);
+    return response.data;
+  },
+
+  // 画像URLを取得
+  getImageUrl: (imageId) => {
+    return `${API_BASE_URL}/images/${imageId}`;
+  },
+
+  // 画像を削除
+  deleteImage: async (imageId) => {
+    const response = await api.delete(`/images/${imageId}`);
+    return response.data;
+  },
+};
+
 export default api;

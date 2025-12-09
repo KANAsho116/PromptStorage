@@ -1,4 +1,6 @@
 import * as workflowModel from '../models/workflow.model.js';
+import * as imageModel from '../models/image.model.js';
+import * as imageService from '../services/image.service.js';
 import {
   extractPrompts,
   extractMetadata,
@@ -186,6 +188,9 @@ export async function deleteWorkflow(req, res, next) {
   try {
     const { id } = req.params;
 
+    // 削除前に画像を取得
+    const images = imageModel.getImagesByWorkflowId(parseInt(id));
+
     const success = workflowModel.deleteWorkflow(parseInt(id));
 
     if (!success) {
@@ -197,6 +202,9 @@ export async function deleteWorkflow(req, res, next) {
         },
       });
     }
+
+    // 画像ファイルを削除
+    imageService.deleteWorkflowImages(images);
 
     res.json({
       success: true,
