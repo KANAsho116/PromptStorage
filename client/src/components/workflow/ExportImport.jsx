@@ -1,35 +1,39 @@
 import { useState } from 'react';
 import { exportAPI, importAPI } from '../../services/export-import.api.js';
+import { useToast } from '../common/Toast';
 
 export default function ExportImport({ selectedIds = [], onImportSuccess }) {
   const [importing, setImporting] = useState(false);
   const [duplicateAction, setDuplicateAction] = useState('rename');
+  const toast = useToast();
 
   const handleExportJSON = async () => {
     if (selectedIds.length === 0) {
-      alert('エクスポートするワークフローを選択してください');
+      toast.info('エクスポートするワークフローを選択してください');
       return;
     }
 
     try {
       await exportAPI.exportJSON(selectedIds);
+      toast.success('JSONエクスポートが完了しました');
     } catch (error) {
       console.error('Export failed:', error);
-      alert('エクスポートに失敗しました');
+      toast.error('エクスポートに失敗しました');
     }
   };
 
   const handleExportZIP = async () => {
     if (selectedIds.length === 0) {
-      alert('エクスポートするワークフローを選択してください');
+      toast.info('エクスポートするワークフローを選択してください');
       return;
     }
 
     try {
       await exportAPI.exportZIP(selectedIds);
+      toast.success('ZIPエクスポートが完了しました');
     } catch (error) {
       console.error('Export failed:', error);
-      alert('エクスポートに失敗しました');
+      toast.error('エクスポートに失敗しました');
     }
   };
 
@@ -45,21 +49,13 @@ export default function ExportImport({ selectedIds = [], onImportSuccess }) {
       if (result.success) {
         const { success, skipped, errors } = result.data;
 
-        let message = `インポート完了:\n`;
-        message += `成功: ${success.length}件\n`;
-
-        if (skipped.length > 0) {
-          message += `スキップ: ${skipped.length}件\n`;
-        }
-
         if (errors.length > 0) {
-          message += `エラー: ${errors.length}件\n`;
-          errors.forEach(err => {
-            message += `  - ${err.name}: ${err.error}\n`;
-          });
+          toast.error(`インポート完了: 成功${success.length}件、エラー${errors.length}件`);
+        } else if (skipped.length > 0) {
+          toast.info(`インポート完了: 成功${success.length}件、スキップ${skipped.length}件`);
+        } else {
+          toast.success(`${success.length}件のワークフローをインポートしました`);
         }
-
-        alert(message);
 
         // インポート成功時のコールバック
         if (onImportSuccess) {
@@ -68,7 +64,7 @@ export default function ExportImport({ selectedIds = [], onImportSuccess }) {
       }
     } catch (error) {
       console.error('Import failed:', error);
-      alert(`インポートに失敗しました: ${error.message}`);
+      toast.error(`インポートに失敗しました: ${error.message}`);
     } finally {
       setImporting(false);
       // ファイル入力をリセット

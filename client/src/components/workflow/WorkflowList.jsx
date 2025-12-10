@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { workflowAPI, imageAPI } from '../../services/api';
 import WorkflowDetail from './WorkflowDetail';
+import { useToast } from '../common/Toast';
+import { useConfirm } from '../common/ConfirmDialog';
 
 // スケルトンカードコンポーネント
 function SkeletonCard() {
@@ -66,6 +68,9 @@ export default function WorkflowList({ refresh, filters = {}, onSelectionChange 
   const [selectedWorkflowId, setSelectedWorkflowId] = useState(null);
   const [hoveredId, setHoveredId] = useState(null);
 
+  const toast = useToast();
+  const confirm = useConfirm();
+
   const fetchWorkflows = async () => {
     try {
       setLoading(true);
@@ -95,14 +100,24 @@ export default function WorkflowList({ refresh, filters = {}, onSelectionChange 
     if (onSelectionChange) onSelectionChange(selectedIds);
   }, [selectedIds]);
 
-  const handleDelete = async (id) => {
-    if (!confirm('このワークフローを削除しますか？')) return;
+  const handleDelete = async (id, workflowName) => {
+    const confirmed = await confirm({
+      title: '削除の確認',
+      message: `"${workflowName}" を削除しますか？この操作は取り消せません。`,
+      confirmLabel: '削除',
+      cancelLabel: 'キャンセル',
+      type: 'danger',
+    });
+
+    if (!confirmed) return;
+
     try {
       await workflowAPI.delete(id);
+      toast.success('ワークフローを削除しました');
       fetchWorkflows();
       setSelectedIds(prev => prev.filter(selectedId => selectedId !== id));
     } catch (err) {
-      alert('削除に失敗しました: ' + err.message);
+      toast.error('削除に失敗しました: ' + err.message);
     }
   };
 
@@ -111,7 +126,7 @@ export default function WorkflowList({ refresh, filters = {}, onSelectionChange 
       await workflowAPI.toggleFavorite(id);
       fetchWorkflows();
     } catch (err) {
-      alert('更新に失敗しました: ' + err.message);
+      toast.error('更新に失敗しました: ' + err.message);
     }
   };
 
@@ -247,7 +262,7 @@ export default function WorkflowList({ refresh, filters = {}, onSelectionChange 
                   詳細
                 </button>
                 <button
-                  onClick={(e) => { e.stopPropagation(); handleDelete(workflow.id); }}
+                  onClick={(e) => { e.stopPropagation(); handleDelete(workflow.id, workflow.name); }}
                   className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm rounded transition-colors"
                 >
                   削除

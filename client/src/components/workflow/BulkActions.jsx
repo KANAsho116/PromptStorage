@@ -1,27 +1,37 @@
 import { useState } from 'react';
 import { workflowAPI } from '../../services/api';
+import { useToast } from '../common/Toast';
+import { useConfirm } from '../common/ConfirmDialog';
 
 export default function BulkActions({ selectedIds, onActionComplete }) {
   const [loading, setLoading] = useState(false);
+  const toast = useToast();
+  const confirm = useConfirm();
 
   const handleBulkDelete = async () => {
     if (selectedIds.length === 0) {
-      alert('削除するワークフローを選択してください');
+      toast.info('削除するワークフローを選択してください');
       return;
     }
 
-    if (!confirm(`選択した${selectedIds.length}件のワークフローを削除しますか？\nこの操作は取り消せません。`)) {
-      return;
-    }
+    const confirmed = await confirm({
+      title: '一括削除の確認',
+      message: `選択した${selectedIds.length}件のワークフローを削除しますか？この操作は取り消せません。`,
+      confirmLabel: '削除',
+      cancelLabel: 'キャンセル',
+      type: 'danger',
+    });
+
+    if (!confirmed) return;
 
     setLoading(true);
     try {
       await Promise.all(selectedIds.map(id => workflowAPI.delete(id)));
-      alert(`${selectedIds.length}件のワークフローを削除しました`);
+      toast.success(`${selectedIds.length}件のワークフローを削除しました`);
       if (onActionComplete) onActionComplete();
     } catch (error) {
       console.error('Bulk delete error:', error);
-      alert('一括削除に失敗しました: ' + error.message);
+      toast.error('一括削除に失敗しました: ' + error.message);
     } finally {
       setLoading(false);
     }
@@ -29,7 +39,7 @@ export default function BulkActions({ selectedIds, onActionComplete }) {
 
   const handleBulkFavorite = async (favorite) => {
     if (selectedIds.length === 0) {
-      alert('ワークフローを選択してください');
+      toast.info('ワークフローを選択してください');
       return;
     }
 
@@ -38,11 +48,11 @@ export default function BulkActions({ selectedIds, onActionComplete }) {
       for (const id of selectedIds) {
         await workflowAPI.update(id, { favorite });
       }
-      alert(`${selectedIds.length}件のワークフローを${favorite ? 'お気に入りに追加' : 'お気に入りから削除'}しました`);
+      toast.success(`${selectedIds.length}件のワークフローを${favorite ? 'お気に入りに追加' : 'お気に入りから削除'}しました`);
       if (onActionComplete) onActionComplete();
     } catch (error) {
       console.error('Bulk favorite error:', error);
-      alert('一括更新に失敗しました: ' + error.message);
+      toast.error('一括更新に失敗しました: ' + error.message);
     } finally {
       setLoading(false);
     }
