@@ -20,29 +20,68 @@ const SAMPLER_NODE_TYPES = ['KSampler', 'KSamplerAdvanced'];
 const LATENT_NODE_TYPES = ['EmptyLatentImage', 'LatentUpscale'];
 const VAE_NODE_TYPES = ['VAELoader', 'VAEDecode', 'VAEEncode'];
 
-/**
- * ComfyUI JSONからプロンプト情報を抽出
- * @param {Object} workflowJson - ComfyUI ワークフローJSON
- * @returns {Array} プロンプト情報の配列
- */
+function normalizeWorkflowJson(workflowJson) {
+  const hasNumericKeys = Object.keys(workflowJson).some(key => !isNaN(key));
+  if (hasNumericKeys) return workflowJson;
+  if (workflowJson.nodes && Array.isArray(workflowJson.nodes)) {
+    const normalized = {};
+    for (const node of workflowJson.nodes) {
+      normalized[String(node.id)] = {
+        class_type: node.type,
+        inputs: convertUIInputsToAPI(node),
+        _meta: { title: node.title || node.type }
+      };
+    }
+    return normalized;
+  }
+  return workflowJson;
+}
+
+function convertUIInputsToAPI(node) {
+  const inputs = {};
+  if (node.widgets_values && Array.isArray(node.widgets_values)) {
+    if (node.type === 'CLIPTextEncode' && node.widgets_values.length > 0) {
+      inputs.text = node.widgets_values[0];
+    }
+    if ((node.type === 'CheckpointLoaderSimple' || node.type === 'CheckpointLoader') && node.widgets_values.length > 0) {
+      inputs.ckpt_name = node.widgets_values[0];
+    }
+    if ((node.type === 'KSampler' || node.type === 'KSamplerAdvanced') && node.widgets_values.length >= 5) {
+      inputs.seed = node.widgets_values[0];
+      inputs.steps = node.widgets_values[1];
+      inputs.cfg = node.widgets_values[2];
+      inputs.sampler_name = node.widgets_values[3];
+      inputs.scheduler = node.widgets_values[4];
+    }
+    if (node.type === 'EmptyLatentImage' && node.widgets_values.length >= 2) {
+      inputs.width = node.widgets_values[0];
+      inputs.height = node.widgets_values[1];
+    }
+    if (node.type === 'VAELoader' && node.widgets_values.length > 0) {
+      inputs.vae_name = node.widgets_values[0];
+    }
+  }
+  if (node.inputs && Array.isArray(node.inputs)) {
+    for (const input of node.inputs) {
+      if (input.link !== null && input.link !== undefined) {
+        inputs[input.name] = [String(input.link), 0];
+      }
+    }
+  }
+  return inputs;
+}
+
 export function extractPrompts(workflowJson) {
   const prompts = [];
-
   try {
-    // ワークフローJSONをイテレート
-    for (const [nodeId, nodeData] of Object.entries(workflowJson)) {
-      // 数値キー以外はスキップ（nodes、linksなどのメタデータ）
+    const normalizedJson = normalizeWorkflowJson(workflowJson);
+    for (const [nodeId, nodeData] of Object.entries(normalizedJson)) {
       if (isNaN(nodeId)) continue;
-
       const classType = nodeData.class_type;
-
-      // プロンプトノードの場合
       if (PROMPT_NODE_TYPES.includes(classType)) {
         const promptText = extractPromptText(nodeData);
-
         if (promptText) {
-          const promptType = determinePromptType(nodeId, nodeData, workflowJson);
-
+          const promptType = determinePromptType(nodeId, nodeData, normalizedJson);
           prompts.push({
             nodeId,
             nodeType: classType,
@@ -55,15 +94,8 @@ export function extractPrompts(workflowJson) {
   } catch (error) {
     console.error('Error extracting prompts:', error);
   }
-
   return prompts;
 }
-
-/**
- * ノードからプロンプトテキストを抽出
- * @param {Object} nodeData - ノードデータ
- * @returns {string|null} プロンプトテキスト
- */
 function extractPromptText(nodeData) {
   const inputs = nodeData.inputs;
 
@@ -142,10 +174,7 @@ function findNodeConnections(nodeId, workflowJson) {
 }
 
 /**
- * ワークフローからメタデータを抽出
- * @param {Object} workflowJson - ComfyUI ワークフローJSON
- * @returns {Object} メタデータ
- */
+
 export function extractMetadata(workflowJson) {
   const metadata = {
     models: [],
@@ -157,15 +186,12 @@ export function extractMetadata(workflowJson) {
     scheduler: null,
     vaes: [],
   };
-
   try {
-    for (const [nodeId, nodeData] of Object.entries(workflowJson)) {
+    const normalizedJson = normalizeWorkflowJson(workflowJson);
+    for (const [nodeId, nodeData] of Object.entries(normalizedJson)) {
       if (isNaN(nodeId)) continue;
-
       const classType = nodeData.class_type;
       const inputs = nodeData.inputs || {};
-
-      // チェックポイント/モデル情報
       if (CHECKPOINT_NODE_TYPES.includes(classType)) {
         if (inputs.ckpt_name) {
           metadata.models.push({
@@ -175,22 +201,17 @@ export function extractMetadata(workflowJson) {
           });
         }
       }
-
-      // サンプラー情報
       if (SAMPLER_NODE_TYPES.includes(classType)) {
         metadata.samplers.push({
           sampler_name: inputs.sampler_name,
           scheduler: inputs.scheduler,
           nodeId
         });
-
         if (inputs.seed !== undefined) metadata.seed = inputs.seed;
         if (inputs.steps !== undefined) metadata.steps = inputs.steps;
         if (inputs.cfg !== undefined) metadata.cfg = inputs.cfg;
         if (inputs.scheduler !== undefined) metadata.scheduler = inputs.scheduler;
       }
-
-      // 画像サイズ情報
       if (LATENT_NODE_TYPES.includes(classType)) {
         if (inputs.width && inputs.height) {
           metadata.dimensions = {
@@ -200,8 +221,6 @@ export function extractMetadata(workflowJson) {
           };
         }
       }
-
-      // VAE情報
       if (VAE_NODE_TYPES.includes(classType)) {
         if (inputs.vae_name) {
           metadata.vaes.push({
@@ -214,27 +233,16 @@ export function extractMetadata(workflowJson) {
   } catch (error) {
     console.error('Error extracting metadata:', error);
   }
-
   return metadata;
 }
 
-/**
- * ワークフローJSONの妥当性を検証
- * @param {Object} workflowJson - 検証するJSON
- * @returns {Object} { valid: boolean, error: string|null }
- */
 export function validateWorkflowJson(workflowJson) {
-  // 基本的な型チェック
   if (!workflowJson || typeof workflowJson !== 'object') {
     return { valid: false, error: 'Invalid JSON: not an object' };
   }
-
-  // 空オブジェクトチェック
   if (Object.keys(workflowJson).length === 0) {
     return { valid: false, error: 'Invalid JSON: empty workflow' };
   }
-
-  // ノードが存在するかチェック
   let hasNodes = false;
   for (const key of Object.keys(workflowJson)) {
     if (!isNaN(key)) {
@@ -242,43 +250,45 @@ export function validateWorkflowJson(workflowJson) {
       break;
     }
   }
-
+  if (!hasNodes && workflowJson.nodes && Array.isArray(workflowJson.nodes) && workflowJson.nodes.length > 0) {
+    hasNodes = true;
+  }
   if (!hasNodes) {
     return { valid: false, error: 'Invalid JSON: no nodes found' };
   }
-
-  // class_typeの存在をチェック
-  for (const [nodeId, nodeData] of Object.entries(workflowJson)) {
-    if (isNaN(nodeId)) continue;
-
-    if (!nodeData.class_type) {
-      return {
-        valid: false,
-        error: `Invalid node ${nodeId}: missing class_type`
-      };
+  const hasNumericKeys = Object.keys(workflowJson).some(key => !isNaN(key));
+  if (hasNumericKeys) {
+    for (const [nodeId, nodeData] of Object.entries(workflowJson)) {
+      if (isNaN(nodeId)) continue;
+      if (!nodeData.class_type) {
+        return {
+          valid: false,
+          error: 'Invalid node ' + nodeId + ': missing class_type'
+        };
+      }
     }
   }
-
+  if (workflowJson.nodes && Array.isArray(workflowJson.nodes)) {
+    for (const node of workflowJson.nodes) {
+      if (!node.type) {
+        return {
+          valid: false,
+          error: 'Invalid node ' + node.id + ': missing type'
+        };
+      }
+    }
+  }
   return { valid: true, error: null };
 }
 
-/**
- * ワークフロー名を自動生成
- * @param {Object} workflowJson - ワークフローJSON
- * @returns {string} 生成された名前
- */
 export function generateWorkflowName(workflowJson) {
   const metadata = extractMetadata(workflowJson);
   const timestamp = new Date().toISOString().split('T')[0];
-
-  // モデル名があればそれをベースに
   if (metadata.models.length > 0) {
     const modelName = metadata.models[0].name
-      .replace(/\.[^/.]+$/, '') // 拡張子削除
-      .replace(/[_-]/g, ' '); // アンダースコアとハイフンをスペースに
-    return `${modelName} - ${timestamp}`;
+      .replace(/\.[^/.]+$/g, '')
+      .replace(/[_-]/g, ' ');
+    return modelName + ' - ' + timestamp;
   }
-
-  // なければデフォルト名
-  return `Workflow - ${timestamp}`;
+  return 'Workflow - ' + timestamp;
 }
