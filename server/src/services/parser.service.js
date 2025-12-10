@@ -3,8 +3,9 @@
  * ComfyUIのワークフローJSONからプロンプトやメタデータを抽出
  */
 
-// プロンプトを含むノードタイプ
+// プロンプトを含むノードタイプ（標準 + カスタムノード）
 const PROMPT_NODE_TYPES = [
+  // 標準 ComfyUI ノード
   'CLIPTextEncode',
   'CLIPTextEncodeSDXL',
   'CLIPTextEncodeSDXLRefiner',
@@ -12,6 +13,28 @@ const PROMPT_NODE_TYPES = [
   'ConditioningConcat',
   'ConditioningAverage',
   'ConditioningSetArea',
+  // Qwen/Florence系カスタムノード
+  'TextEncodeQwenImageEdit',
+  'TextEncodeQwen',
+  'Florence2Run',
+  'Florence2',
+  // その他一般的なカスタムノード
+  'BNK_CLIPTextEncodeAdvanced',
+  'CLIPTextEncodeSD3',
+  'CLIPTextEncodeHunyuanDiT',
+  'CLIPTextEncodeMochi',
+  'CLIPTextEncodeLTXV',
+  'WildcardEncode',
+  'PromptComposer',
+];
+
+// プロンプトを含む可能性があるノード名のパターン
+const PROMPT_NODE_PATTERNS = [
+  /^CLIPText/i,
+  /^TextEncode/i,
+  /Prompt/i,
+  /Florence/i,
+  /Caption/i,
 ];
 
 // メタデータ関連ノードタイプ
@@ -19,6 +42,13 @@ const CHECKPOINT_NODE_TYPES = ['CheckpointLoaderSimple', 'CheckpointLoader'];
 const SAMPLER_NODE_TYPES = ['KSampler', 'KSamplerAdvanced'];
 const LATENT_NODE_TYPES = ['EmptyLatentImage', 'LatentUpscale'];
 const VAE_NODE_TYPES = ['VAELoader', 'VAEDecode', 'VAEEncode'];
+
+// ノードタイプがプロンプトを含む可能性があるか判定
+function isPromptNode(classType) {
+  if (!classType) return false;
+  if (PROMPT_NODE_TYPES.includes(classType)) return true;
+  return PROMPT_NODE_PATTERNS.some(pattern => pattern.test(classType));
+}
 
 function normalizeWorkflowJson(workflowJson) {
   const hasNumericKeys = Object.keys(workflowJson).some(key => !isNaN(key));
@@ -40,27 +70,43 @@ function normalizeWorkflowJson(workflowJson) {
 function convertUIInputsToAPI(node) {
   const inputs = {};
   if (node.widgets_values && Array.isArray(node.widgets_values)) {
-    if (node.type === 'CLIPTextEncode' && node.widgets_values.length > 0) {
-      inputs.text = node.widgets_values[0];
+    const nodeType = node.type || '';
+
+    // テキストエンコード系ノード: widgets_values[0]にテキストが入る
+    if (isPromptNode(nodeType) && node.widgets_values.length > 0) {
+      const firstValue = node.widgets_values[0];
+      if (typeof firstValue === 'string' && firstValue.length > 0) {
+        inputs.text = firstValue;
+      }
     }
-    if ((node.type === 'CheckpointLoaderSimple' || node.type === 'CheckpointLoader') && node.widgets_values.length > 0) {
+
+    // CheckpointLoader
+    if ((nodeType === 'CheckpointLoaderSimple' || nodeType === 'CheckpointLoader') && node.widgets_values.length > 0) {
       inputs.ckpt_name = node.widgets_values[0];
     }
-    if ((node.type === 'KSampler' || node.type === 'KSamplerAdvanced') && node.widgets_values.length >= 5) {
+
+    // KSampler
+    if ((nodeType === 'KSampler' || nodeType === 'KSamplerAdvanced') && node.widgets_values.length >= 5) {
       inputs.seed = node.widgets_values[0];
       inputs.steps = node.widgets_values[1];
       inputs.cfg = node.widgets_values[2];
       inputs.sampler_name = node.widgets_values[3];
       inputs.scheduler = node.widgets_values[4];
     }
-    if (node.type === 'EmptyLatentImage' && node.widgets_values.length >= 2) {
+
+    // EmptyLatentImage
+    if (nodeType === 'EmptyLatentImage' && node.widgets_values.length >= 2) {
       inputs.width = node.widgets_values[0];
       inputs.height = node.widgets_values[1];
     }
-    if (node.type === 'VAELoader' && node.widgets_values.length > 0) {
+
+    // VAELoader
+    if (nodeType === 'VAELoader' && node.widgets_values.length > 0) {
       inputs.vae_name = node.widgets_values[0];
     }
   }
+
+  // ノード接続情報
   if (node.inputs && Array.isArray(node.inputs)) {
     for (const input of node.inputs) {
       if (input.link !== null && input.link !== undefined) {
@@ -78,7 +124,9 @@ export function extractPrompts(workflowJson) {
     for (const [nodeId, nodeData] of Object.entries(normalizedJson)) {
       if (isNaN(nodeId)) continue;
       const classType = nodeData.class_type;
-      if (PROMPT_NODE_TYPES.includes(classType)) {
+
+      // パターンマッチングも含めた判定
+      if (isPromptNode(classType)) {
         const promptText = extractPromptText(nodeData);
         if (promptText) {
           const promptType = determinePromptType(nodeId, nodeData, normalizedJson);
@@ -96,26 +144,23 @@ export function extractPrompts(workflowJson) {
   }
   return prompts;
 }
+
 function extractPromptText(nodeData) {
   const inputs = nodeData.inputs;
 
   if (!inputs) return null;
 
   // 一般的なテキスト入力フィールド
-  if (inputs.text) return inputs.text;
-  if (inputs.prompt) return inputs.prompt;
-  if (inputs.positive) return inputs.positive;
-  if (inputs.negative) return inputs.negative;
+  if (inputs.text && typeof inputs.text === 'string') return inputs.text;
+  if (inputs.prompt && typeof inputs.prompt === 'string') return inputs.prompt;
+  if (inputs.positive && typeof inputs.positive === 'string') return inputs.positive;
+  if (inputs.negative && typeof inputs.negative === 'string') return inputs.negative;
 
   return null;
 }
 
 /**
  * プロンプトがpositive/negativeのどちらかを判定
- * @param {string} nodeId - ノードID
- * @param {Object} nodeData - ノードデータ
- * @param {Object} workflowJson - 完全なワークフローJSON
- * @returns {string} 'positive' | 'negative' | 'unknown'
  */
 function determinePromptType(nodeId, nodeData, workflowJson) {
   // タイトルから判定
@@ -128,14 +173,13 @@ function determinePromptType(nodeId, nodeData, workflowJson) {
   if (inputs.negative !== undefined) return 'negative';
   if (inputs.positive !== undefined) return 'positive';
 
-  // ノードの接続先を追跡して判定（高度な解析）
+  // ノードの接続先を追跡して判定
   const connections = findNodeConnections(nodeId, workflowJson);
 
   // KSamplerノードへの接続を確認
   for (const conn of connections) {
     const targetNode = workflowJson[conn.targetNodeId];
     if (targetNode && SAMPLER_NODE_TYPES.includes(targetNode.class_type)) {
-      // サンプラーのnegative入力に接続されているか確認
       if (conn.targetInput === 'negative') return 'negative';
       if (conn.targetInput === 'positive') return 'positive';
     }
@@ -146,9 +190,6 @@ function determinePromptType(nodeId, nodeData, workflowJson) {
 
 /**
  * ノードの接続情報を取得
- * @param {string} nodeId - ノードID
- * @param {Object} workflowJson - ワークフローJSON
- * @returns {Array} 接続情報の配列
  */
 function findNodeConnections(nodeId, workflowJson) {
   const connections = [];
