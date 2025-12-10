@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { workflowAPI, imageAPI } from '../../services/api';
+import WorkflowDetail from './WorkflowDetail';
 
 export default function WorkflowList({ refresh, filters = {}, onSelectionChange }) {
   const [workflows, setWorkflows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedIds, setSelectedIds] = useState([]);
+  const [selectedWorkflowId, setSelectedWorkflowId] = useState(null);
 
   const fetchWorkflows = async () => {
     try {
@@ -64,6 +66,11 @@ export default function WorkflowList({ refresh, filters = {}, onSelectionChange 
     setSelectedIds(selectedIds.length === workflows.length ? [] : workflows.map(w => w.id));
   };
 
+  const handleViewDetail = (id, event) => {
+    event.stopPropagation();
+    setSelectedWorkflowId(id);
+  };
+
   if (loading) {
     return (
       <div className='text-center py-12'>
@@ -114,15 +121,15 @@ export default function WorkflowList({ refresh, filters = {}, onSelectionChange 
               </label>
             </div>
             {workflow.images && workflow.images.length > 0 && (
-              <div className='w-full h-48 bg-gray-900 overflow-hidden relative'>
+              <div className='w-full h-48 bg-gray-900 overflow-hidden relative cursor-pointer' onClick={(e) => handleViewDetail(workflow.id, e)}>
                 <img src={imageAPI.getImageUrl(workflow.images.find(img => img.is_thumbnail)?.id || workflow.images[0].id)} alt={workflow.name} className='w-full h-full object-cover' onError={(e) => { e.target.style.display = 'none'; }} />
               </div>
             )}
             <div className='p-6'>
               <div className='flex justify-between items-start mb-4'>
-                <h3 className='text-lg font-semibold text-white truncate flex-1'>{workflow.name}</h3>
+                <h3 className='text-lg font-semibold text-white truncate flex-1 cursor-pointer hover:text-blue-400 transition-colors' onClick={(e) => handleViewDetail(workflow.id, e)}>{workflow.name}</h3>
                 <button
-                  onClick={() => handleToggleFavorite(workflow.id)}
+                  onClick={(e) => { e.stopPropagation(); handleToggleFavorite(workflow.id); }}
                   className={`text-2xl transition-colors ${workflow.favorite ? 'text-yellow-400 hover:text-yellow-500' : 'text-gray-600 hover:text-yellow-400'}`}
                   title={workflow.favorite ? 'お気に入りから削除' : 'お気に入りに追加'}
                 >
@@ -140,12 +147,20 @@ export default function WorkflowList({ refresh, filters = {}, onSelectionChange 
                 </div>
               )}
               <div className='flex gap-2'>
-                <button onClick={() => handleDelete(workflow.id)} className='flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm rounded transition-colors'>削除</button>
+                <button onClick={(e) => handleViewDetail(workflow.id, e)} className='flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded transition-colors'>詳細</button>
+                <button onClick={(e) => { e.stopPropagation(); handleDelete(workflow.id); }} className='flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm rounded transition-colors'>削除</button>
               </div>
             </div>
           </div>
         ))}
       </div>
+
+      {selectedWorkflowId && (
+        <WorkflowDetail
+          workflowId={selectedWorkflowId}
+          onClose={() => setSelectedWorkflowId(null)}
+        />
+      )}
     </div>
   );
 }
