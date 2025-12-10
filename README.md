@@ -90,14 +90,14 @@ npm run install:all
 npm run dev
 
 # または個別に起動
-npm run dev:server  # サーバーのみ (http://localhost:3001)
-npm run dev:client  # クライアントのみ (http://localhost:5173)
+npm run dev:server  # サーバーのみ
+npm run dev:client  # クライアントのみ
 \`\`\`
 
-アクセス:
-- **クライアント**: http://localhost:5173
-- **API**: http://localhost:3001/api
-- **ヘルスチェック**: http://localhost:3001/health
+**アクセス:**
+- クライアント: `http://localhost:5173`
+- API: `http://localhost:3001/api`
+- ヘルスチェック: `http://localhost:3001/health`
 
 ### 環境変数
 
