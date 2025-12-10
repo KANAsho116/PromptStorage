@@ -104,7 +104,10 @@ export default function WorkflowList({ refresh, filters = {}, onSelectionChange 
 
       <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'>
         {workflows.map((workflow) => (
-          <div key={workflow.id} className={}>
+          <div
+            key={workflow.id}
+            className={`bg-gray-800 rounded-lg overflow-hidden hover:shadow-xl transition-all duration-200 relative ${selectedIds.includes(workflow.id) ? 'ring-2 ring-blue-500 ring-offset-2 ring-offset-gray-900' : 'border border-gray-700'}`}
+          >
             <div className='absolute top-3 left-3 z-10'>
               <label className='cursor-pointer block'>
                 <input type='checkbox' checked={selectedIds.includes(workflow.id)} onChange={() => handleSelectWorkflow(workflow.id)} className='w-5 h-5 text-blue-600 bg-gray-900/80 backdrop-blur border-2 border-gray-600 rounded focus:ring-blue-500 focus:ring-2 cursor-pointer' onClick={(e) => e.stopPropagation()} />
@@ -118,7 +121,13 @@ export default function WorkflowList({ refresh, filters = {}, onSelectionChange 
             <div className='p-6'>
               <div className='flex justify-between items-start mb-4'>
                 <h3 className='text-lg font-semibold text-white truncate flex-1'>{workflow.name}</h3>
-                <button onClick={() => handleToggleFavorite(workflow.id)} className={} title={workflow.favorite ? 'お気に入りから削除' : 'お気に入りに追加'}>★</button>
+                <button
+                  onClick={() => handleToggleFavorite(workflow.id)}
+                  className={`text-2xl transition-colors ${workflow.favorite ? 'text-yellow-400 hover:text-yellow-500' : 'text-gray-600 hover:text-yellow-400'}`}
+                  title={workflow.favorite ? 'お気に入りから削除' : 'お気に入りに追加'}
+                >
+                  ★
+                </button>
               </div>
               {workflow.description && <p className='text-sm text-gray-400 mb-4 line-clamp-2'>{workflow.description}</p>}
               <div className='flex items-center justify-between text-xs text-gray-500 mb-4'>
