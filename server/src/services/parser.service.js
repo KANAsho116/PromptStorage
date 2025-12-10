@@ -173,8 +173,6 @@ function findNodeConnections(nodeId, workflowJson) {
   return connections;
 }
 
-/**
-
 export function extractMetadata(workflowJson) {
   const metadata = {
     models: [],
