@@ -3,7 +3,7 @@ import { workflowAPI } from '../../services/api';
 import { useToast } from '../common/Toast';
 import { useConfirm } from '../common/ConfirmDialog';
 
-export default function BulkActions({ selectedIds, onActionComplete }) {
+export default function BulkActions({ selectedIds, onActionComplete, onCompare }) {
   const [loading, setLoading] = useState(false);
   const toast = useToast();
   const confirm = useConfirm();
@@ -58,18 +58,43 @@ export default function BulkActions({ selectedIds, onActionComplete }) {
     }
   };
 
+  const handleCompare = () => {
+    if (selectedIds.length !== 2) {
+      toast.info('比較するには2つのワークフローを選択してください');
+      return;
+    }
+    if (onCompare) onCompare(selectedIds);
+  };
+
   if (selectedIds.length === 0) {
     return null;
   }
 
   return (
-    <div className='fixed bottom-4 left-4 right-4 md:left-1/2 md:right-auto md:transform md:-translate-x-1/2 md:w-auto bg-gray-800 border border-gray-700 rounded-lg shadow-2xl p-3 md:p-4 z-50 max-w-full'>
+    <div className='fixed bottom-4 left-4 right-4 md:left-1/2 md:right-auto md:transform md:-translate-x-1/2 md:w-auto bg-gray-800 border border-gray-700 rounded-lg shadow-2xl p-3 md:p-4 z-40 max-w-full'>
       <div className='flex flex-wrap items-center justify-center gap-2 md:gap-4'>
         <span className='text-xs md:text-sm text-gray-300 font-semibold'>
           {selectedIds.length}件選択中
         </span>
 
         <div className='hidden md:block h-6 w-px bg-gray-700'></div>
+
+        {/* Compare button - only enabled when exactly 2 selected */}
+        <button
+          onClick={handleCompare}
+          disabled={loading || selectedIds.length !== 2}
+          className={`px-2 md:px-3 py-1.5 md:py-2 text-white text-xs md:text-sm rounded transition-colors flex items-center gap-1 md:gap-2 ${
+            selectedIds.length === 2
+              ? 'bg-purple-600 hover:bg-purple-700'
+              : 'bg-gray-600 cursor-not-allowed opacity-50'
+          }`}
+          title={selectedIds.length !== 2 ? '2つ選択すると比較できます' : 'プロンプトを比較'}
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+          </svg>
+          <span className='hidden sm:inline'>比較</span>
+        </button>
 
         <button
           onClick={() => handleBulkFavorite(true)}

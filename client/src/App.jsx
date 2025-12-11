@@ -5,6 +5,7 @@ import WorkflowFilter from './components/workflow/WorkflowFilter';
 import ExportImport from './components/workflow/ExportImport';
 import BulkActions from './components/workflow/BulkActions';
 import CollectionManager from './components/workflow/CollectionManager';
+import WorkflowCompare from './components/workflow/WorkflowCompare';
 import { ToastProvider } from './components/common/Toast';
 import { ConfirmProvider } from './components/common/ConfirmDialog';
 
@@ -13,6 +14,7 @@ function App() {
   const [filters, setFilters] = useState({});
   const [selectedIds, setSelectedIds] = useState([]);
   const [activeCollection, setActiveCollection] = useState(null);
+  const [compareIds, setCompareIds] = useState(null);
 
   const handleUploadSuccess = () => {
     setRefreshKey((prev) => prev + 1);
@@ -41,6 +43,10 @@ function App() {
 
   const handleCollectionRefresh = () => {
     setRefreshKey((prev) => prev + 1);
+  };
+
+  const handleCompare = (ids) => {
+    setCompareIds(ids);
   };
 
   return (
@@ -100,11 +106,20 @@ function App() {
           <BulkActions
             selectedIds={selectedIds}
             onActionComplete={handleBulkActionComplete}
+            onCompare={handleCompare}
           />
+
+          {/* Compare Modal */}
+          {compareIds && (
+            <WorkflowCompare
+              workflowIds={compareIds}
+              onClose={() => setCompareIds(null)}
+            />
+          )}
 
           <footer className="bg-gray-800 border-t border-gray-700 mt-16">
             <div className="container mx-auto px-4 py-6 text-center text-gray-500 text-sm">
-              <p>フェーズ8: コレクション機能</p>
+              <p>フェーズ8: コレクション + 比較機能</p>
             </div>
           </footer>
         </div>
