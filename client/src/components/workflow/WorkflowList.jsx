@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { workflowAPI, imageAPI } from '../../services/api';
+import { collectionAPI } from '../../services/collection.api';
 import WorkflowDetail from './WorkflowDetail';
 import { useToast } from '../common/Toast';
 import { useConfirm } from '../common/ConfirmDialog';
@@ -50,14 +51,18 @@ function SkeletonRow() {
 }
 
 // Empty state
-function EmptyState() {
+function EmptyState({ isCollection }) {
   return (
     <div className="text-center py-16">
       <svg className="mx-auto h-24 w-24 text-gray-600 mb-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
       </svg>
-      <h3 className="text-xl font-semibold text-gray-400 mb-2">ワークフローがありません</h3>
-      <p className="text-gray-500 mb-6">ComfyUI のワークフロー JSON をアップロードして<br />プロンプトを管理しましょう</p>
+      <h3 className="text-xl font-semibold text-gray-400 mb-2">
+        {isCollection ? 'コレクションにワークフローがありません' : 'ワークフローがありません'}
+      </h3>
+      <p className="text-gray-500 mb-6">
+        {isCollection ? 'ワークフローを選択してコレクションに追加しましょう' : 'ComfyUI のワークフロー JSON をアップロードして\nプロンプトを管理しましょう'}
+      </p>
     </div>
   );
 }
@@ -144,14 +149,34 @@ export default function WorkflowList({ refresh, filters = {}, onSelectionChange 
   const fetchWorkflows = useCallback(async (page = 1) => {
     try {
       setLoading(true);
-      const params = { ...filters, page, limit: viewMode === 'compact' ? 50 : 20 };
+      const limit = viewMode === 'compact' ? 50 : 20;
       let result;
-      if (filters.q) {
-        result = await workflowAPI.search(filters.q, params);
+
+      // Collection filter - use collection API
+      if (filters.collectionId) {
+        const collectionResult = await collectionAPI.getById(filters.collectionId);
+        const collectionWorkflows = collectionResult.data?.workflows || [];
+        // Client-side pagination for collection
+        const start = (page - 1) * limit;
+        const paginatedWorkflows = collectionWorkflows.slice(start, start + limit);
+        result = {
+          data: paginatedWorkflows,
+          pagination: {
+            page,
+            totalPages: Math.ceil(collectionWorkflows.length / limit),
+            total: collectionWorkflows.length,
+          }
+        };
       } else {
-        result = await workflowAPI.getAll(params);
+        const params = { ...filters, page, limit };
+        if (filters.q) {
+          result = await workflowAPI.search(filters.q, params);
+        } else {
+          result = await workflowAPI.getAll(params);
+        }
       }
-      setWorkflows(result.data);
+
+      setWorkflows(result.data || []);
       if (result.pagination) {
         setPagination({
           page: result.pagination.page,
@@ -403,7 +428,7 @@ export default function WorkflowList({ refresh, filters = {}, onSelectionChange 
     );
   }
 
-  if (workflows.length === 0) return <EmptyState />;
+  if (workflows.length === 0) return <EmptyState isCollection={!!filters.collectionId} />;
 
   return (
     <div ref={containerRef}>

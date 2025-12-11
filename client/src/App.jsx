@@ -4,6 +4,7 @@ import WorkflowList from './components/workflow/WorkflowList';
 import WorkflowFilter from './components/workflow/WorkflowFilter';
 import ExportImport from './components/workflow/ExportImport';
 import BulkActions from './components/workflow/BulkActions';
+import CollectionManager from './components/workflow/CollectionManager';
 import { ToastProvider } from './components/common/Toast';
 import { ConfirmProvider } from './components/common/ConfirmDialog';
 
@@ -11,13 +12,14 @@ function App() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [filters, setFilters] = useState({});
   const [selectedIds, setSelectedIds] = useState([]);
+  const [activeCollection, setActiveCollection] = useState(null);
 
   const handleUploadSuccess = () => {
     setRefreshKey((prev) => prev + 1);
   };
 
   const handleFilterChange = (newFilters) => {
-    setFilters(newFilters);
+    setFilters({ ...newFilters, collectionId: activeCollection });
   };
 
   const handleImportSuccess = () => {
@@ -29,6 +31,15 @@ function App() {
   };
 
   const handleBulkActionComplete = () => {
+    setRefreshKey((prev) => prev + 1);
+  };
+
+  const handleCollectionSelect = (collectionId) => {
+    setActiveCollection(collectionId);
+    setFilters((prev) => ({ ...prev, collectionId }));
+  };
+
+  const handleCollectionRefresh = () => {
     setRefreshKey((prev) => prev + 1);
   };
 
@@ -56,18 +67,34 @@ function App() {
               />
             </section>
 
-            <section className="mb-8">
-              <WorkflowFilter onFilterChange={handleFilterChange} />
-            </section>
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+              {/* Sidebar - Collections */}
+              <div className="lg:col-span-1">
+                <CollectionManager
+                  selectedIds={selectedIds}
+                  onCollectionSelect={handleCollectionSelect}
+                  onRefresh={handleCollectionRefresh}
+                />
+              </div>
 
-            <section>
-              <h2 className="text-2xl font-semibold mb-6">保存されたワークフロー</h2>
-              <WorkflowList
-                refresh={refreshKey}
-                filters={filters}
-                onSelectionChange={handleSelectionChange}
-              />
-            </section>
+              {/* Main content */}
+              <div className="lg:col-span-3">
+                <section className="mb-8">
+                  <WorkflowFilter onFilterChange={handleFilterChange} />
+                </section>
+
+                <section>
+                  <h2 className="text-2xl font-semibold mb-6">
+                    {activeCollection ? 'コレクション内のワークフロー' : '保存されたワークフロー'}
+                  </h2>
+                  <WorkflowList
+                    refresh={refreshKey}
+                    filters={filters}
+                    onSelectionChange={handleSelectionChange}
+                  />
+                </section>
+              </div>
+            </div>
           </main>
 
           <BulkActions
@@ -77,7 +104,7 @@ function App() {
 
           <footer className="bg-gray-800 border-t border-gray-700 mt-16">
             <div className="container mx-auto px-4 py-6 text-center text-gray-500 text-sm">
-              <p>フェーズ7-1: UI/UX改善</p>
+              <p>フェーズ8: コレクション機能</p>
             </div>
           </footer>
         </div>
