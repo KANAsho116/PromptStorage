@@ -30,26 +30,11 @@ function SkeletonCard() {
 function EmptyState() {
   return (
     <div className="text-center py-16">
-      <svg
-        className="mx-auto h-24 w-24 text-gray-600 mb-6"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={1}
-          d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
-        />
+      <svg className="mx-auto h-24 w-24 text-gray-600 mb-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
       </svg>
-      <h3 className="text-xl font-semibold text-gray-400 mb-2">
-        ワークフローがありません
-      </h3>
-      <p className="text-gray-500 mb-6">
-        ComfyUI のワークフロー JSON をアップロードして<br />
-        プロンプトを管理しましょう
-      </p>
+      <h3 className="text-xl font-semibold text-gray-400 mb-2">ワークフローがありません</h3>
+      <p className="text-gray-500 mb-6">ComfyUI のワークフロー JSON をアップロードして<br />プロンプトを管理しましょう</p>
       <div className="flex items-center justify-center gap-2 text-sm text-gray-600">
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
@@ -143,6 +128,11 @@ export default function WorkflowList({ refresh, filters = {}, onSelectionChange 
     setSelectedWorkflowId(id);
   };
 
+  const handleDetailUpdate = () => {
+    // Refresh the list when changes are made in the detail modal
+    fetchWorkflows();
+  };
+
   if (loading) {
     return (
       <div>
@@ -197,18 +187,13 @@ export default function WorkflowList({ refresh, filters = {}, onSelectionChange 
             </div>
 
             {workflow.images && workflow.images.length > 0 && (
-              <div
-                className="w-full h-48 bg-gray-900 overflow-hidden relative cursor-pointer"
-                onClick={(e) => handleViewDetail(workflow.id, e)}
-              >
+              <div className="w-full h-48 bg-gray-900 overflow-hidden relative cursor-pointer" onClick={(e) => handleViewDetail(workflow.id, e)}>
                 <img
                   src={imageAPI.getImageUrl(workflow.images.find(img => img.is_thumbnail)?.id || workflow.images[0].id)}
                   alt={workflow.name}
                   className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                   onError={(e) => { e.target.style.display = 'none'; }}
                 />
-
-                {/* ホバープレビュー */}
                 {hoveredId === workflow.id && workflow.images.length > 0 && (
                   <div className="absolute inset-0 bg-black/60 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                     <span className="text-white text-sm font-medium">クリックで詳細</span>
@@ -219,10 +204,7 @@ export default function WorkflowList({ refresh, filters = {}, onSelectionChange 
 
             <div className="p-6">
               <div className="flex justify-between items-start mb-4">
-                <h3
-                  className="text-lg font-semibold text-white truncate flex-1 cursor-pointer hover:text-blue-400 transition-colors"
-                  onClick={(e) => handleViewDetail(workflow.id, e)}
-                >
+                <h3 className="text-lg font-semibold text-white truncate flex-1 cursor-pointer hover:text-blue-400 transition-colors" onClick={(e) => handleViewDetail(workflow.id, e)}>
                   {workflow.name}
                 </h3>
                 <button
@@ -244,10 +226,7 @@ export default function WorkflowList({ refresh, filters = {}, onSelectionChange 
               {workflow.tags && workflow.tags.length > 0 && (
                 <div className="flex flex-wrap gap-2 mb-4">
                   {workflow.tags.map((tag) => (
-                    <span
-                      key={tag.id}
-                      className="px-2 py-1 bg-blue-900/30 text-blue-300 text-xs rounded hover:bg-blue-900/50 transition-colors"
-                    >
+                    <span key={tag.id} className="px-2 py-1 bg-blue-900/30 text-blue-300 text-xs rounded hover:bg-blue-900/50 transition-colors">
                       {tag.name}
                     </span>
                   ))}
@@ -255,16 +234,10 @@ export default function WorkflowList({ refresh, filters = {}, onSelectionChange 
               )}
 
               <div className="flex gap-2">
-                <button
-                  onClick={(e) => handleViewDetail(workflow.id, e)}
-                  className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded transition-colors"
-                >
+                <button onClick={(e) => handleViewDetail(workflow.id, e)} className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded transition-colors">
                   詳細
                 </button>
-                <button
-                  onClick={(e) => { e.stopPropagation(); handleDelete(workflow.id, workflow.name); }}
-                  className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm rounded transition-colors"
-                >
+                <button onClick={(e) => { e.stopPropagation(); handleDelete(workflow.id, workflow.name); }} className="flex-1 px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm rounded transition-colors">
                   削除
                 </button>
               </div>
@@ -277,6 +250,7 @@ export default function WorkflowList({ refresh, filters = {}, onSelectionChange 
         <WorkflowDetail
           workflowId={selectedWorkflowId}
           onClose={() => setSelectedWorkflowId(null)}
+          onUpdate={handleDetailUpdate}
         />
       )}
     </div>
