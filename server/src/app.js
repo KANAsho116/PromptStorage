@@ -24,6 +24,7 @@ import tagRoutes from './routes/tag.routes.js';
 import exportRoutes from './routes/export.routes.js';
 import importRoutes from './routes/import.routes.js';
 import collectionRoutes from './routes/collection.routes.js';
+import statsRoutes from './routes/stats.routes.js';
 
 // 環境変数読み込み
 config();
@@ -81,6 +82,7 @@ app.use(`${API_PREFIX}/tags`, tagRoutes);
 app.use(`${API_PREFIX}/export`, exportRoutes);
 app.use(`${API_PREFIX}/import`, importRoutes);
 app.use(`${API_PREFIX}/collections`, collectionRoutes);
+app.use(`${API_PREFIX}/stats`, statsRoutes);
 
 // テスト用エンドポイント
 app.get(`${API_PREFIX}/test`, (req, res) => {
